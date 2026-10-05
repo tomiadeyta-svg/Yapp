@@ -85,14 +85,19 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
 /* Compose */
 .compose-card{width:100%;max-width:400px;background:var(--cbg);border-radius:28px;border:2.5px solid var(--b1);padding:16px;box-shadow:0 0 30px var(--g1),0 0 60px var(--g2)}
 .compose-row{display:flex;gap:11px;margin-bottom:12px}
-.compose-ta{flex:1;background:transparent;border:none;outline:none;color:var(--t1);font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
-.compose-ta::placeholder{color:rgba(255,255,255,0.22)}
+.compose-ta{flex:1;background:#CCCCFF;border:1px solid #9999CC;border-radius:12px;outline:none;color:#211B3A;font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
+.compose-ta::placeholder{color:#625B7D}
 .feel-box{width:105px;border:2px solid var(--b2);border-radius:16px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.35);gap:6px;justify-content:flex-start;min-height:100px}
 .feel-lbl{font-size:9px;font-weight:700;color:var(--c2);letter-spacing:1.5px;text-align:center}
 .feel-emoji-btn{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--b1);display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;font-size:22px;transition:all 0.2s}
 .feel-emoji-btn:hover{background:rgba(255,255,255,0.1)}
 .feel-in{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);outline:none;color:var(--t1);font-family:'Montserrat',sans-serif;font-size:11px;text-align:center;padding-bottom:3px}
 .feel-in::placeholder{color:rgba(255,255,255,0.22)}
+.feel-gif-in{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:7px;outline:none;color:var(--t1);font-family:'Montserrat',sans-serif;font-size:9px;padding:5px 4px;text-align:center}
+.feel-gif-in::placeholder{color:rgba(255,255,255,0.35)}
+.terms-consent{display:flex;align-items:flex-start;gap:8px;margin:4px 0 10px;color:rgba(255,255,255,0.72);font-size:10px;line-height:1.5}
+.terms-consent input{accent-color:var(--c2);margin-top:2px;flex-shrink:0}
+.terms-consent a{color:#C8B6FF;text-decoration:underline}
 .char-counter{font-size:10px;color:rgba(255,255,255,0.3);text-align:right;margin-bottom:6px;font-weight:500}
 .yap-btn{width:100%;background:var(--c2);border:1.5px solid var(--c1);border-radius:14px;padding:12px;font-family:'Bungee',cursive;font-size:17px;color:var(--c1);letter-spacing:2px;cursor:pointer;transition:all 0.3s;-webkit-text-stroke:1px rgba(0,0,0,0.4);text-shadow:2px 2px 0 rgba(0,0,0,0.3)}
 .yap-btn:hover{filter:brightness(1.25);transform:scale(1.02)}
@@ -315,13 +320,13 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
       <input class="auth-input" id="regEmail" placeholder="Email" type="email"/>
       <input class="auth-input" id="regHandle" placeholder="@handle"/>
       <input class="auth-input" id="regPass" placeholder="Password" type="password"/>
+      <label class="terms-consent"><input id="termsAccepted" type="checkbox" required/><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>.</span></label>
       <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">★ CREATE ACCOUNT ★</button>
     </div>
     <div class="auth-divider">OR CONTINUE WITH</div>
     <div class="social-row">
       <button class="social-btn" onclick="socialAuth('google')">🔵 Google</button>
-      <button class="social-btn" onclick="socialAuth('apple')">🍎 Apple</button>
     </div>
   </div>
 </div>
@@ -350,7 +355,8 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
               <div class="feel-lbl">FEELING</div>
               <button class="feel-emoji-btn" onclick="openPicker()" id="feelEmojiBtn">😶</button>
               <input class="feel-in" id="feelText" placeholder="vibes..." maxlength="20"/>
-              <div style="font-size:8px;color:rgba(255,255,255,0.3);text-align:center">tap emoji</div>
+              <input class="feel-gif-in" id="feelGifUrl" type="url" placeholder="GIF URL (optional)" aria-label="Feeling GIF URL"/>
+              <div style="font-size:8px;color:rgba(255,255,255,0.3);text-align:center">tap emoji or add GIF</div>
             </div>
           </div>
           <div class="char-counter"><span id="charCount">0</span>/280</div>
@@ -538,6 +544,8 @@ const EMOJI_CATS={
 };
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function validFeelGif(value){try{const u=new URL(value);return u.protocol==='https:'&&['media.tenor.com','media1.tenor.com','media2.giphy.com','media3.giphy.com','media4.giphy.com','media.giphy.com','i.giphy.com'].includes(u.hostname)?u:null}catch{return null}}
+function renderFeel(text){const m=String(text||'').match(/^\[\[YAPGIF:([^\]]+)\]\] ?(.*)$/s);if(!m)return text?'<div class="pf-text">'+esc(text)+'</div>':'';let url;try{url=decodeURIComponent(m[1])}catch{return ''}const safe=validFeelGif(url);return safe?'<img src="'+esc(safe.href)+'" alt="Feeling GIF" loading="lazy" referrerpolicy="no-referrer" style="max-width:100%;max-height:100px;object-fit:contain;border-radius:8px"/>'+(m[2]?'<div class="pf-text">'+esc(m[2])+'</div>':''):''}
 function timeAgo(ts){const s=Math.floor((Date.now()-new Date(ts).getTime())/1000);if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago'}
 function isToday(ts){const d=new Date(ts),n=new Date();return d.toDateString()===n.toDateString()}
 function avatarHTML(p){return p&&p.avatar_url?`<img src="${p.avatar_url}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`:esc(((p&&p.display_name)||'?').charAt(0).toUpperCase())}
@@ -564,10 +572,13 @@ async function doRegister(){
   const pass=document.getElementById('regPass').value;
   const err=document.getElementById('regErr');
   if(!name||!email||!pass){err.textContent='Please fill in all fields.';return;}
+  const termsAccepted=document.getElementById('termsAccepted').checked;
+  if(!termsAccepted){err.textContent='Please accept the Terms & Conditions to create an account.';return;}
+  const termsAcceptedAt=new Date().toISOString();
   if(pass.length<6){err.textContent='Password must be 6+ characters.';return;}
   const handle=(handleRaw?handleRaw.replace(/^@/,''):name).toLowerCase().replace(/[^a-z0-9_]/g,'')||'yapper'+Math.floor(Math.random()*10000);
   err.textContent='Creating account...';
-  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle}}});
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle,terms_accepted:true,terms_version:"2026-10-05",terms_accepted_at:termsAcceptedAt}}});
   if(error){err.textContent=error.message;return;}
   if(data.user){
     const {error:profErr}=await sb.from('profiles').insert({id:data.user.id,handle,display_name:name});
@@ -576,6 +587,9 @@ async function doRegister(){
   err.textContent=data.session?'':'Check your email to confirm your account, then sign in.';
 }
 async function socialAuth(provider){
+  const signingUp=document.getElementById('authPane1').style.display!=='none';
+  if(signingUp&&!document.getElementById('termsAccepted').checked){document.getElementById('regErr').textContent='Please accept the Terms & Conditions to continue.';return;}
+  if(signingUp)localStorage.setItem('yap_terms_consent',JSON.stringify({version:"2026-10-05",accepted_at:new Date().toISOString()}));
   const {error}=await sb.auth.signInWithOAuth({provider});
   if(error)showDMToast('⚠️ '+error.message);
 }
@@ -697,9 +711,12 @@ async function postYap(){
   if(!STATE.profile.is_pro&&todayCount>=FREE_POST_LIMIT){showLimitToast();return;}
   const emoji=document.getElementById('feelEmojiBtn').textContent;
   const feelTxt=document.getElementById('feelText').value||'';
-  const {error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:feelTxt});
+  const gifUrl=document.getElementById('feelGifUrl').value.trim();
+  if(gifUrl&&!validFeelGif(gifUrl)){showDMToast('⚠️ Use an HTTPS GIF URL from Tenor or Giphy.');return;}
+  const savedFeel=gifUrl?'[[YAPGIF:'+encodeURIComponent(gifUrl)+']] '+feelTxt:feelTxt;
+  const {error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:savedFeel});
   if(error){showDMToast('⚠️ Could not post: '+error.message);return;}
-  textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('charCount').textContent='0';
+  textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('feelGifUrl').value='';document.getElementById('charCount').textContent='0';
   spawnConfetti();
   setTimeout(()=>{const p=document.querySelectorAll('.page');if(p[1])p[1].scrollIntoView({behavior:'smooth'})},100);
 }
@@ -743,7 +760,7 @@ function renderPosts(){
         </div>
         <div class="yap-body">
           <div class="yap-content">${esc(p.text)}</div>
-          <div class="post-feel"><div class="pf-label">FEELING</div><div class="pf-emoji">${p.feel_emoji||'😶'}</div>${p.feel_text?`<div class="pf-text">${esc(p.feel_text)}</div>`:''}</div>
+          <div class="post-feel"><div class="pf-label">FEELING</div><div class="pf-emoji">${p.feel_emoji||'😶'}</div>${renderFeel(p.feel_text)}</div>
         </div>
         <div class="yap-actions">
           <button class="act heart-act${liked?' liked':''}" onclick="likePost('${p.id}',this)"><span class="hi">${liked?'❤️':'🤍'}</span><span class="lcount">${p.like_count||0}</span></button>
