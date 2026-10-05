@@ -320,10 +320,10 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
       <input class="auth-input" id="regEmail" placeholder="Email" type="email"/>
       <input class="auth-input" id="regHandle" placeholder="@handle"/>
       <input class="auth-input" id="regPass" placeholder="Password" type="password"/>
-      <label class="terms-consent"><input id="termsAccepted" type="checkbox" required/><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a>.</span></label>
-      <div class="auth-error" id="regErr"></div>
+        <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">★ CREATE ACCOUNT ★</button>
     </div>
+    <label class="terms-consent"><input id="termsAccepted" type="checkbox" required/><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> before creating an account.</span></label>
     <div class="auth-divider">OR CONTINUE WITH</div>
     <div class="social-row">
       <button class="social-btn" onclick="socialAuth('google')">🔵 Google</button>
@@ -587,9 +587,8 @@ async function doRegister(){
   err.textContent=data.session?'':'Check your email to confirm your account, then sign in.';
 }
 async function socialAuth(provider){
-  const signingUp=document.getElementById('authPane1').style.display!=='none';
-  if(signingUp&&!document.getElementById('termsAccepted').checked){document.getElementById('regErr').textContent='Please accept the Terms & Conditions to continue.';return;}
-  if(signingUp)localStorage.setItem('yap_terms_consent',JSON.stringify({version:"2026-10-05",accepted_at:new Date().toISOString()}));
+  if(!document.getElementById('termsAccepted').checked){document.getElementById('regErr').textContent='Please accept the Terms & Conditions before continuing with Google.';return;}
+  localStorage.setItem('yap_terms_consent',JSON.stringify({version:"2026-10-05",accepted_at:new Date().toISOString()}));
   const {error}=await sb.auth.signInWithOAuth({provider});
   if(error)showDMToast('⚠️ '+error.message);
 }
