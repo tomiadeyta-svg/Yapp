@@ -658,8 +658,8 @@ async function loadProfile(){
 // INIT
 async function initApp(){
   buildThemebar();buildParticles();
-  await loadFeed();
   await loadFriendIds();
+  await loadFeed();
   await buildChatList();
   updateProfile();
   buildFriendsList(0);
