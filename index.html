@@ -83,18 +83,16 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
 .yap-sub{font-family:'Lilita One',cursive;font-size:10px;color:var(--c1);letter-spacing:5px;opacity:.7;margin-top:2px}
 
 /* Compose */
-.compose-card{width:100%;max-width:400px;background:var(--cbg);border-radius:28px;border:2.5px solid var(--b1);padding:16px;box-shadow:0 0 30px var(--g1),0 0 60px var(--g2)}
+.compose-card{width:100%;max-width:400px;background:#FEFAFF;border-radius:28px;border:2.5px solid var(--b1);padding:16px;box-shadow:0 0 30px var(--g1),0 0 60px var(--g2)}
 .compose-row{display:flex;gap:11px;margin-bottom:12px}
-.compose-ta{flex:1;background:#CCCCFF;border:1px solid #9999CC;border-radius:12px;outline:none;color:#211B3A;font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
+.compose-ta{flex:1;background:#FEFAFF;border:1px solid #9999CC;border-radius:12px;outline:none;color:#211B3A;font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
 .compose-ta::placeholder{color:#625B7D}
-.feel-box{width:105px;border:2px solid var(--b2);border-radius:16px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;background:rgba(0,0,0,0.35);gap:6px;justify-content:flex-start;min-height:100px}
-.feel-lbl{font-size:9px;font-weight:700;color:var(--c2);letter-spacing:1.5px;text-align:center}
+.feel-box{width:105px;border:2px solid var(--b2);border-radius:16px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;background:#FEFAFF;gap:6px;justify-content:flex-start;min-height:100px}
+.feel-lbl{font-size:9px;font-weight:700;color:#4a2454;letter-spacing:1.5px;text-align:center}
 .feel-emoji-btn{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--b1);display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;font-size:22px;transition:all 0.2s}
 .feel-emoji-btn:hover{background:rgba(255,255,255,0.1)}
-.feel-in{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(255,255,255,0.25);outline:none;color:var(--t1);font-family:'Montserrat',sans-serif;font-size:11px;text-align:center;padding-bottom:3px}
-.feel-in::placeholder{color:rgba(255,255,255,0.22)}
-.feel-gif-in{width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.2);border-radius:7px;outline:none;color:var(--t1);font-family:'Montserrat',sans-serif;font-size:9px;padding:5px 4px;text-align:center}
-.feel-gif-in::placeholder{color:rgba(255,255,255,0.35)}
+.feel-in{width:100%;background:transparent;border:none;border-bottom:1px solid rgba(36,28,72,0.25);outline:none;color:#241c48;font-family:'Montserrat',sans-serif;font-size:11px;text-align:center;padding-bottom:3px}
+.feel-in::placeholder{color:#777080}
 .terms-consent{display:flex;align-items:flex-start;gap:8px;margin:4px 0 10px;color:rgba(255,255,255,0.72);font-size:10px;line-height:1.5}
 .terms-consent input{accent-color:var(--c2);margin-top:2px;flex-shrink:0}
 .terms-consent a{color:#C8B6FF;text-decoration:underline}
@@ -323,7 +321,7 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
         <div class="auth-error" id="regErr"></div>
       <button class="auth-btn" onclick="doRegister()">★ CREATE ACCOUNT ★</button>
     </div>
-    <label class="terms-consent"><input id="termsAccepted" type="checkbox" required/><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> before creating an account.</span></label>
+    <label class="terms-consent" style="display:none"><input id="termsAccepted" type="checkbox" required/><span>I agree to the <a href="terms.html" target="_blank" rel="noopener">Terms &amp; Conditions</a> and acknowledge the <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> before creating an account.</span></label>
     <div class="auth-divider">OR CONTINUE WITH</div>
     <div class="social-row">
       <button class="social-btn" onclick="socialAuth('google')">🔵 Google</button>
@@ -355,8 +353,7 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
               <div class="feel-lbl">FEELING</div>
               <button class="feel-emoji-btn" onclick="openPicker()" id="feelEmojiBtn">😶</button>
               <input class="feel-in" id="feelText" placeholder="vibes..." maxlength="20"/>
-              <input class="feel-gif-in" id="feelGifUrl" type="url" placeholder="GIF URL (optional)" aria-label="Feeling GIF URL"/>
-              <div style="font-size:8px;color:rgba(255,255,255,0.3);text-align:center">tap emoji or add GIF</div>
+              <div style="font-size:8px;color:#777080;text-align:center">choose an emoji</div>
             </div>
           </div>
           <div class="char-counter"><span id="charCount">0</span>/280</div>
@@ -555,6 +552,7 @@ function authTab(i){
   document.querySelectorAll('.auth-tab').forEach((t,j)=>t.classList.toggle('on',j===i));
   document.getElementById('authPane0').style.display=i===0?'block':'none';
   document.getElementById('authPane1').style.display=i===1?'block':'none';
+  document.querySelector('.terms-consent').style.display=i===1?'flex':'none';
 }
 async function doLogin(){
   const email=document.getElementById('loginEmail').value.trim();
@@ -578,7 +576,7 @@ async function doRegister(){
   if(pass.length<6){err.textContent='Password must be 6+ characters.';return;}
   const handle=(handleRaw?handleRaw.replace(/^@/,''):name).toLowerCase().replace(/[^a-z0-9_]/g,'')||'yapper'+Math.floor(Math.random()*10000);
   err.textContent='Creating account...';
-  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle,terms_accepted:true,terms_version:"2026-10-05",terms_accepted_at:termsAcceptedAt}}});
+  const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle,terms_accepted:true,terms_version:"2026-10-05",terms_accepted_at:termsAcceptedAt,privacy_accepted:true,privacy_version:"2026-10-05",privacy_accepted_at:termsAcceptedAt}}});
   if(error){err.textContent=error.message;return;}
   if(data.user){
     const {error:profErr}=await sb.from('profiles').insert({id:data.user.id,handle,display_name:name});
@@ -587,8 +585,9 @@ async function doRegister(){
   err.textContent=data.session?'':'Check your email to confirm your account, then sign in.';
 }
 async function socialAuth(provider){
-  if(!document.getElementById('termsAccepted').checked){document.getElementById('regErr').textContent='Please accept the Terms & Conditions before continuing with Google.';return;}
-  localStorage.setItem('yap_terms_consent',JSON.stringify({version:"2026-10-05",accepted_at:new Date().toISOString()}));
+  const signingUp=document.getElementById('authPane1').style.display!=='none';
+  if(signingUp&&!document.getElementById('termsAccepted').checked){document.getElementById('regErr').textContent='Please accept the Terms and acknowledge the Privacy Policy before creating an account.';return;}
+  if(signingUp)localStorage.setItem('yap_terms_consent',JSON.stringify({version:"2026-10-05",privacy_version:"2026-10-05",accepted_at:new Date().toISOString()}));
   const {error}=await sb.auth.signInWithOAuth({provider});
   if(error)showDMToast('⚠️ '+error.message);
 }
@@ -607,7 +606,7 @@ sb.auth.onAuthStateChange(async (event,session)=>{
     const pendingConsent=localStorage.getItem('yap_terms_consent');
     if(pendingConsent){
       localStorage.removeItem('yap_terms_consent');
-      try{const consent=JSON.parse(pendingConsent);if(consent.accepted_at)setTimeout(()=>sb.auth.updateUser({data:{terms_accepted:true,terms_version:consent.version,terms_accepted_at:consent.accepted_at}}),0)}catch{}
+      try{const consent=JSON.parse(pendingConsent);if(consent.accepted_at)setTimeout(()=>sb.auth.updateUser({data:{terms_accepted:true,terms_version:consent.version,terms_accepted_at:consent.accepted_at,privacy_accepted:true,privacy_version:consent.privacy_version,privacy_accepted_at:consent.accepted_at}}),0)}catch{}
     }
     await loadProfile();
     document.getElementById('authScreen').classList.add('hidden');
@@ -715,12 +714,9 @@ async function postYap(){
   if(!STATE.profile.is_pro&&todayCount>=FREE_POST_LIMIT){showLimitToast();return;}
   const emoji=document.getElementById('feelEmojiBtn').textContent;
   const feelTxt=document.getElementById('feelText').value||'';
-  const gifUrl=document.getElementById('feelGifUrl').value.trim();
-  if(gifUrl&&!validFeelGif(gifUrl)){showDMToast('⚠️ Use an HTTPS GIF URL from Tenor or Giphy.');return;}
-  const savedFeel=gifUrl?'[[YAPGIF:'+encodeURIComponent(gifUrl)+']] '+feelTxt:feelTxt;
-  const {error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:savedFeel});
+  const {error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:feelTxt});
   if(error){showDMToast('⚠️ Could not post: '+error.message);return;}
-  textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('feelGifUrl').value='';document.getElementById('charCount').textContent='0';
+  textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('charCount').textContent='0';
   spawnConfetti();
   setTimeout(()=>{const p=document.querySelectorAll('.page');if(p[1])p[1].scrollIntoView({behavior:'smooth'})},100);
 }
