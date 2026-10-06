@@ -603,8 +603,9 @@ async function doLogout(){
 
 let authInitToken=0,activeAuthUser=null;
 sb.auth.onAuthStateChange((event,session)=>{
-  STATE.session=session;
+  if(session&&activeAuthUser===session.user.id){STATE.session=session;return}
   const token=++authInitToken;
+  STATE.session=session;
   if(!session){
     activeAuthUser=null;
     document.getElementById('app').classList.add('hidden');
@@ -613,7 +614,6 @@ sb.auth.onAuthStateChange((event,session)=>{
     return;
   }
   const userId=session.user.id;
-  if(activeAuthUser===userId&&event!=='INITIAL_SESSION')return;
   activeAuthUser=userId;
   document.getElementById('authScreen').classList.add('hidden');
   document.getElementById('app').classList.add('hidden');
@@ -637,7 +637,7 @@ sb.auth.onAuthStateChange((event,session)=>{
       document.getElementById('authScreen').classList.remove('hidden');
       document.getElementById('app').classList.add('hidden');
       document.body.classList.remove('auth-pending');
-      showAuthError('loginErr','Could not load your account. Please try again.');
+      const authErr=document.getElementById('loginErr');if(authErr)authErr.textContent='Could not load your account. Please try again.';
     }
   },0);
 });
