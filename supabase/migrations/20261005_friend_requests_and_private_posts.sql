@@ -13,8 +13,9 @@ create table if not exists public.friend_requests (
   constraint friend_requests_not_self check (requester_id <> recipient_id)
 );
 
-create unique index if not exists friend_requests_one_pending_direction
-  on public.friend_requests(requester_id, recipient_id) where status = 'pending';
+create unique index if not exists friend_requests_one_pending_pair
+  on public.friend_requests(least(requester_id, recipient_id), greatest(requester_id, recipient_id))
+  where status = 'pending';
 create index if not exists friend_requests_recipient_status
   on public.friend_requests(recipient_id, status, created_at desc);
 create index if not exists friend_requests_requester_status
@@ -92,7 +93,7 @@ stable
 security definer
 set search_path = ''
 as $$
-  select exists (
+  select (auth.uid() = a or auth.uid() = b) and exists (
     select 1 from public.friendships f
     where (f.user_id = a and f.friend_id = b)
        or (f.user_id = b and f.friend_id = a)
@@ -121,6 +122,8 @@ drop trigger if exists friend_request_accept_friendship on public.friend_request
 create trigger friend_request_accept_friendship
   after update of status on public.friend_requests
   for each row execute function public.accepted_friend_request_add_friendship();
+
+alter table public.posts enable row level security;
 
 -- Remove existing post policies so no older public-read policy can bypass this rule.
 do $$
