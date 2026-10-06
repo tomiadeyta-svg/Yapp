@@ -83,11 +83,11 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
 .yap-sub{font-family:'Lilita One',cursive;font-size:10px;color:var(--c1);letter-spacing:5px;opacity:.7;margin-top:2px}
 
 /* Compose */
-.compose-card{width:100%;max-width:400px;background:#FEFAFF;border-radius:28px;border:2.5px solid var(--b1);padding:16px;box-shadow:0 0 30px var(--g1),0 0 60px var(--g2)}
+.compose-card{width:100%;max-width:400px;background:#F6CEFC;border-radius:28px;border:2.5px solid var(--b1);padding:16px;box-shadow:0 0 30px var(--g1),0 0 60px var(--g2)}
 .compose-row{display:flex;gap:11px;margin-bottom:12px}
-.compose-ta{flex:1;background:#FEFAFF;border:1px solid #9999CC;border-radius:12px;outline:none;color:#211B3A;font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
+.compose-ta{flex:1;background:#F6CEFC;border:1px solid #9999CC;border-radius:12px;outline:none;color:#211B3A;font-family:'Montserrat',sans-serif;font-size:13.5px;resize:none;height:100px;padding:4px;line-height:1.55}
 .compose-ta::placeholder{color:#625B7D}
-.feel-box{width:105px;border:2px solid var(--b2);border-radius:16px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;background:#FEFAFF;gap:6px;justify-content:flex-start;min-height:100px}
+.feel-box{width:105px;border:2px solid var(--b2);border-radius:16px;padding:9px 7px;display:flex;flex-direction:column;align-items:center;background:#F6CEFC;gap:6px;justify-content:flex-start;min-height:100px}
 .feel-lbl{font-size:9px;font-weight:700;color:#4a2454;letter-spacing:1.5px;text-align:center}
 .feel-emoji-btn{width:42px;height:42px;border-radius:11px;border:1.5px solid var(--b1);display:flex;align-items:center;justify-content:center;background:transparent;cursor:pointer;font-size:22px;transition:all 0.2s}
 .feel-emoji-btn:hover{background:rgba(255,255,255,0.1)}
@@ -681,8 +681,13 @@ function buildThemebar(){
     d.style.background=`linear-gradient(135deg,${t.dots[0]},${t.dots[1]})`;
     d.onclick=()=>applyTheme(i,d);bar.appendChild(d);
   });
+  let savedIndex=0;
+  try{const stored=Number(localStorage.getItem('yap_theme_index'));if(Number.isInteger(stored)&&stored>=0&&stored<THEMES.length)savedIndex=stored}catch{}
+  applyTheme(savedIndex,bar.children[savedIndex]);
 }
 function applyTheme(i,dot){
+  if(!THEMES[i]||!dot)return;
+  try{localStorage.setItem('yap_theme_index',String(i))}catch{}
   document.querySelectorAll('.tdot').forEach(d=>d.classList.remove('on'));dot.classList.add('on');
   const t=THEMES[i],r=document.documentElement;
   Object.entries(t.vars).forEach(([k,v])=>r.style.setProperty(k,v));
