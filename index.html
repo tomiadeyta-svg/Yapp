@@ -819,19 +819,27 @@ function goTab(i){
 // COMPOSE
 function updateChar(){document.getElementById('charCount').textContent=document.getElementById('composeText').value.length}
 async function postYap(){
+  if(STATE.postSubmitting)return;
   const textEl=document.getElementById('composeText');
   const text=textEl.value.trim();
   if(!text){textEl.style.border='2px solid #FF4570';setTimeout(()=>{textEl.style.border=''},1000);return;}
+  if(!STATE.profile){showDMToast('Please sign in to post.');return}
   const todayCount=STATE.posts.filter(p=>p.author_id===STATE.profile.id&&isToday(p.created_at)).length;
   if(!STATE.profile.is_pro&&todayCount>=FREE_POST_LIMIT){showLimitToast();return;}
+  const button=document.querySelector('.yap-btn');
+  STATE.postSubmitting=true;
+  if(button){button.disabled=true;button.textContent='POSTING…'}
   const emoji=document.getElementById('feelEmojiBtn').textContent;
   const feelTxt=document.getElementById('feelText').value||'';
-  const {data:newPost,error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:feelTxt}).select('*, profiles!posts_author_id_fkey(id,handle,display_name,avatar_url)').single();
-  if(error){showDMToast('⚠️ Could not post: '+error.message);return;}
-  if(newPost&&!STATE.posts.some(p=>p.id===newPost.id)){STATE.posts.unshift(newPost);renderPosts();updateProfile();}
-  textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('charCount').textContent='0';
-  spawnConfetti();
-  setTimeout(()=>{const p=document.querySelectorAll('.page');if(p[1])p[1].scrollIntoView({behavior:'smooth'})},100);
+  try{
+    const {data:newPost,error}=await sb.from('posts').insert({author_id:STATE.profile.id,text,feel_emoji:emoji,feel_text:feelTxt}).select('*, profiles!posts_author_id_fkey(id,handle,display_name,avatar_url)').single();
+    if(error){showDMToast('⚠️ Could not post: '+error.message);return}
+    if(newPost&&!STATE.posts.some(p=>p.id===newPost.id)){STATE.posts.unshift(newPost);renderPosts();updateProfile();}
+    textEl.value='';document.getElementById('feelEmojiBtn').textContent='😶';document.getElementById('feelText').value='';document.getElementById('charCount').textContent='0';
+    spawnConfetti();
+    setTimeout(()=>{const p=document.querySelectorAll('.page');if(p[1])p[1].scrollIntoView({behavior:'smooth'})},100);
+  }catch(error){showDMToast('⚠️ Could not post. Please try again.');console.error(error)}
+  finally{STATE.postSubmitting=false;if(button){button.disabled=false;button.textContent='✦ YAP IT ✦'}}
 }
 
 // POSTS
@@ -864,7 +872,7 @@ function renderPosts(){
   const feed=document.getElementById('feedEl');
   feed.querySelectorAll('.post-page').forEach(el=>el.remove());
   STATE.posts.forEach((p,idx)=>{
-    const page=document.createElement('div');page.className='page post-page';
+    const page=document.createElement('div');page.className='page post-page';page.dataset.postId=p.id;
     const author=p.profiles||{};
     const liked=STATE.myLikes.has(p.id);
     page.innerHTML=`
@@ -882,6 +890,7 @@ function renderPosts(){
           <button class="act heart-act${liked?' liked':''}" onclick="likePost('${p.id}',this)"><span class="hi">${liked?'❤️':'🤍'}</span><span class="lcount">${p.like_count||0}</span></button>
           <button class="act cmnt-act" onclick="openCmts('${p.id}')"><span>💬</span><span>${p.comment_count||0}</span></button>
           <button class="act dm-act" onclick="sendDM('${author.id||p.author_id}','${esc((author.display_name||'').replace(/'/g,"\\'"))}')"><span>📬</span><span style="font-size:11px">DM</span></button>
+          ${STATE.profile&&STATE.profile.id===p.author_id?'<button class="act delete-post-btn" onclick="deleteYap(\''+p.id+'\')">🗑️ Delete</button>':''}
         </div>
       </div>
       ${!(STATE.profile&&STATE.profile.is_pro)&&idx===1?`<div class="ad-strip"><span style="font-size:8px;letter-spacing:2px;color:rgba(255,255,255,0.25);font-weight:700">AD</span><span style="flex:1;padding:0 10px">🛍️ Discover stuff you'll actually want</span><span class="ad-remove" onclick="openSub('remove ads')">Remove ads →</span></div>`:''}
@@ -889,6 +898,14 @@ function renderPosts(){
     feed.appendChild(page);
   });
   updateMyYapsPreview();
+}
+async function deleteYap(id){
+  if(!STATE.profile||!confirm('Delete this YAP? This cannot be undone.'))return;
+  const {data,error}=await sb.from('posts').delete().eq('id',id).eq('author_id',STATE.profile.id).select('id').maybeSingle();
+  if(error){showDMToast('⚠️ Could not delete YAP: '+error.message);return}
+  if(!data){showDMToast('This YAP could not be deleted.');return}
+  STATE.posts=STATE.posts.filter(p=>p.id!==id);STATE.myLikes.delete(id);renderPosts();updateProfile();
+  showDMToast('YAP deleted.');
 }
 async function likePost(id,btn){
   if(!STATE.profile)return;
@@ -928,20 +945,32 @@ async function openCmts(postId){
   document.getElementById('cmtsList').innerHTML='<div style="text-align:center;padding:16px;font-size:12px;color:rgba(255,255,255,0.3)">Loading...</div>';
   document.getElementById('cmtsDrawer').classList.add('open');
   document.getElementById('cmtsOverlay').classList.add('open');
-  const {data}=await sb.from('comments').select('*, profiles!comments_author_id_fkey(display_name)').eq('post_id',postId).order('created_at',{ascending:true});
+  const {data,error}=await sb.from('comments').select('*, profiles!comments_author_id_fkey(display_name)').eq('post_id',postId).order('created_at',{ascending:true});
+  if(error){document.getElementById('cmtsList').innerHTML='<div class="notification-empty">Could not load comments.</div>';return}
   const cmts=data||[];
-  document.getElementById('cmtsList').innerHTML=cmts.length?cmts.map(c=>`<div class="comment-item"><div class="ci-name">${esc(c.profiles?.display_name||'YAPper')}</div><div class="ci-text">${esc(c.text)}</div></div>`).join(''):'<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;padding:16px">No comments yet. Be first! ✦</div>';
+  document.getElementById('cmtsList').innerHTML=cmts.length?cmts.map(c=>'<div class="comment-item '+(c.parent_comment_id?'comment-reply':'')+'"><div class="ci-name">'+esc(c.profiles?.display_name||'YAPper')+'</div><div class="ci-text">'+esc(c.text)+'</div><button class="reply-btn" onclick="beginCommentReply(\''+c.id+'\',\''+esc(c.profiles?.display_name||'YAPper')+'\')">↩ Reply</button></div>').join(''):'<div style="text-align:center;color:rgba(255,255,255,0.3);font-size:12px;padding:16px">No comments yet. Be first! ✦</div>';
   setTimeout(()=>document.getElementById('cmtsInput').focus(),200);
 }
-function closeCmts(){document.getElementById('cmtsDrawer').classList.remove('open');document.getElementById('cmtsOverlay').classList.remove('open')}
+function beginCommentReply(commentId,name){
+  STATE.replyToComment=commentId;
+  document.getElementById('cmtsInput').placeholder='Replying to '+name+'…';
+  document.getElementById('cmtsInput').focus();
+}
+function closeCmts(){document.getElementById('cmtsDrawer').classList.remove('open');document.getElementById('cmtsOverlay').classList.remove('open');STATE.replyToComment=null;document.getElementById('cmtsInput').placeholder='Add a comment…'}
 async function sendComment(){
-  const inp=document.getElementById('cmtsInput'),text=inp.value.trim();
-  if(!text||!STATE.currentCommentPost||!STATE.profile)return;
-  inp.value='';
-  const {error}=await sb.from('comments').insert({post_id:STATE.currentCommentPost,author_id:STATE.profile.id,text});
-  if(error){showDMToast('⚠️ '+error.message);return;}
-  const post=STATE.posts.find(p=>p.id===STATE.currentCommentPost);if(post)post.comment_count=(post.comment_count||0)+1;
-  openCmts(STATE.currentCommentPost);renderPosts();
+  if(STATE.commentSubmitting)return;
+  const inp=document.getElementById('cmtsInput'),text=inp.value.trim(),postId=STATE.currentCommentPost,parent_comment_id=STATE.replyToComment;
+  if(!text||!postId||!STATE.profile)return;
+  STATE.commentSubmitting=true;
+  inp.disabled=true;
+  const body={post_id:postId,author_id:STATE.profile.id,text};
+  if(parent_comment_id)body.parent_comment_id=parent_comment_id;
+  const {data,error}=await sb.from('comments').insert(body).select('id').single();
+  inp.disabled=false;STATE.commentSubmitting=false;
+  if(error){showDMToast('⚠️ '+error.message);return}
+  inp.value='';STATE.replyToComment=null;inp.placeholder='Add a comment…';
+  const post=STATE.posts.find(p=>p.id===postId);if(post)post.comment_count=(post.comment_count||0)+1;
+  await openCmts(postId);renderPosts();
 }
 
 // EMOJI PICKER
@@ -1241,24 +1270,39 @@ function spawnConfetti(){
 
 // AVATAR UPLOAD
 function changeAvatar(){document.getElementById('avatarFileInput').click()}
-async function handleAvatarUpload(e){
-  const file=e.target.files[0];if(!file||!STATE.profile)return;
-  if(file.size>5*1024*1024){showDMToast('⚠️ Image must be under 5MB');e.target.value='';return;}
-  showDMToast('📤 Uploading photo...');
-  const ext=(file.name.split('.').pop()||'jpg').toLowerCase();
-  const path=`${STATE.profile.id}/avatar.${ext}`;
-  const {error:upErr}=await sb.storage.from('yap-media').upload(path,file,{upsert:true});
-  if(upErr){showDMToast('⚠️ Upload failed: '+upErr.message);e.target.value='';return;}
-  const {data:pub}=sb.storage.from('yap-media').getPublicUrl(path);
-  const avatar_url=pub.publicUrl+'?t='+Date.now();
-  const {error:updErr}=await sb.from('profiles').update({avatar_url}).eq('id',STATE.profile.id);
-  if(updErr){showDMToast('⚠️ '+updErr.message);e.target.value='';return;}
-  STATE.profile.avatar_url=avatar_url;
-  STATE.posts=STATE.posts.map(p=>p.author_id===STATE.profile.id?{...p,profiles:{...(p.profiles||{}),...STATE.profile}}:p);
-  updateProfile();renderPosts();buildChatList();
-  showDMToast('✅ Photo updated!');
-  e.target.value='';
+async function prepareAvatarForUpload(file){
+  try{
+    const bitmap=await createImageBitmap(file);
+    const scale=Math.min(1,1024/Math.max(bitmap.width,bitmap.height));
+    const canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(bitmap.width*scale));canvas.height=Math.max(1,Math.round(bitmap.height*scale));
+    canvas.getContext('2d').drawImage(bitmap,0,0,canvas.width,canvas.height);bitmap.close?.();
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/jpeg',0.88));
+    if(blob)return new File([blob],'yap-avatar.jpg',{type:'image/jpeg'});
+  }catch(error){console.warn('Image conversion was unavailable',error)}
+  if(['image/jpeg','image/png','image/webp'].includes(file.type)&&file.size<=5*1024*1024)return file;
+  throw new Error('Choose a JPEG, PNG, or WebP photo that your device can open.');
 }
+async function handleAvatarUpload(e){
+  const chosen=e.target.files[0];if(!chosen||!STATE.profile)return;
+  if(chosen.size>15*1024*1024){showDMToast('⚠️ Choose a photo under 15MB.');e.target.value='';return}
+  showDMToast('📤 Preparing photo…');
+  try{
+    const file=await prepareAvatarForUpload(chosen);
+    const path=STATE.profile.id+'/avatar-'+Date.now()+'.jpg';
+    const {error:upErr}=await sb.storage.from('yap-media').upload(path,file,{cacheControl:'0',contentType:'image/jpeg',upsert:false});
+    if(upErr)throw upErr;
+    const {data:pub}=sb.storage.from('yap-media').getPublicUrl(path);
+    const avatar_url=pub.publicUrl+'?v='+Date.now();
+    const {data,error:updErr}=await sb.from('profiles').update({avatar_url}).eq('id',STATE.profile.id).select().single();
+    if(updErr)throw updErr;
+    STATE.profile=data;
+    STATE.posts=STATE.posts.map(p=>p.author_id===data.id?{...p,profiles:{...(p.profiles||{}),...data}}:p);
+    updateProfile();renderPosts();buildChatList();
+    showDMToast('✅ Photo updated!');
+  }catch(error){showDMToast('⚠️ Photo upload failed: '+(error.message||'Please try again.'));console.error(error)}
+  finally{e.target.value=''}
+}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js').catch(error=>console.warn('YAP app shell unavailable',error)))}
 </script>
 </body>
 </html>
