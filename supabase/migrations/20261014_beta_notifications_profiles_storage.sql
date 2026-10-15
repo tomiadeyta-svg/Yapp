@@ -118,10 +118,10 @@ create policy "comments_update_own"
 create policy "comments_delete_own"
   on public.comments for delete to authenticated using (author_id=(select auth.uid()));
 
-create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
+create schema if not exists yap_private;
+revoke all on schema yap_private from public, anon, authenticated;
 
-create or replace function private.notify_friend_request()
+create or replace function yap_private.notify_friend_request()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare actor_name text;
@@ -134,13 +134,13 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.notify_friend_request() from public, anon, authenticated;
+revoke all on function yap_private.notify_friend_request() from public, anon, authenticated;
 drop trigger if exists notify_friend_request_created on public.friend_requests;
 create trigger notify_friend_request_created
   after insert on public.friend_requests
-  for each row execute function private.notify_friend_request();
+  for each row execute function yap_private.notify_friend_request();
 
-create or replace function private.notify_friend_request_accepted()
+create or replace function yap_private.notify_friend_request_accepted()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare actor_name text;
@@ -154,13 +154,13 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.notify_friend_request_accepted() from public, anon, authenticated;
+revoke all on function yap_private.notify_friend_request_accepted() from public, anon, authenticated;
 drop trigger if exists notify_friend_request_accepted on public.friend_requests;
 create trigger notify_friend_request_accepted
   after update of status on public.friend_requests
-  for each row execute function private.notify_friend_request_accepted();
+  for each row execute function yap_private.notify_friend_request_accepted();
 
-create or replace function private.notify_yap_like()
+create or replace function yap_private.notify_yap_like()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare post_owner uuid; actor_name text;
@@ -175,12 +175,12 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.notify_yap_like() from public, anon, authenticated;
+revoke all on function yap_private.notify_yap_like() from public, anon, authenticated;
 drop trigger if exists notify_yap_like_created on public.likes;
 create trigger notify_yap_like_created after insert on public.likes
-  for each row execute function private.notify_yap_like();
+  for each row execute function yap_private.notify_yap_like();
 
-create or replace function private.notify_yap_comment()
+create or replace function yap_private.notify_yap_comment()
 returns trigger language plpgsql security definer set search_path = ''
 as $$
 declare post_owner uuid; parent_owner uuid; actor_name text; excerpt text;
@@ -210,10 +210,10 @@ begin
   return new;
 end;
 $$;
-revoke all on function private.notify_yap_comment() from public, anon, authenticated;
+revoke all on function yap_private.notify_yap_comment() from public, anon, authenticated;
 drop trigger if exists notify_yap_comment_created on public.comments;
 create trigger notify_yap_comment_created after insert on public.comments
-  for each row execute function private.notify_yap_comment();
+  for each row execute function yap_private.notify_yap_comment();
 
 -- A public bucket is needed because avatar URLs are displayed to other users.
 -- Per-user storage policies limit who can upload or replace objects in each folder.
