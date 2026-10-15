@@ -4,7 +4,13 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover"/>
 <title>YAP - Speak Your Mind</title>
-<meta name="theme-color" content="#C800FF"/>
+<meta name="theme-color" content="#180018"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="YAP"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<link rel="manifest" href="/manifest.webmanifest"/>
+<link rel="icon" href="/yap-icon.svg" type="image/svg+xml"/>
+<link rel="apple-touch-icon" href="/yap-icon.svg"/>
 <link href="https://fonts.googleapis.com/css2?family=Lilita+One&family=Bungee&family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
@@ -295,7 +301,33 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
 .confetti-piece{position:fixed;pointer-events:none;z-index:1000;border-radius:3px;animation:confettiFall 1.2s ease-out forwards}
 @keyframes confettiFall{0%{transform:translateY(0) rotate(0);opacity:1}100%{transform:translateY(300px) rotate(720deg);opacity:0}}
 </style>
-<style>body.auth-pending #authScreen{visibility:hidden}</style>
+<style>body.auth-pending #authScreen{visibility:hidden}
+/* Settings, notifications, and manual user search */
+.notification-btn{position:absolute;top:calc(12px + var(--safe-top));left:68px;z-index:100;background:rgba(20,0,28,.86);border:1.5px solid var(--b1);border-radius:50%;width:40px;height:40px;color:var(--t1);font-size:19px;cursor:pointer}
+.notification-badge{position:absolute;right:-5px;top:-6px;min-width:18px;height:18px;padding:0 4px;border-radius:10px;background:#ff3366;color:#fff;font:700 10px/18px Montserrat,sans-serif}
+.settings-open-btn,.settings-action{width:100%;border:1.5px solid var(--b1);border-radius:12px;padding:11px 14px;background:rgba(255,255,255,.07);color:var(--t1);font:700 12px Montserrat,sans-serif;cursor:pointer;margin-top:8px}
+.settings-overlay,.notifications-overlay{position:fixed;inset:0;z-index:850;background:rgba(0,0,0,.78);display:none;align-items:flex-end}
+.settings-overlay.open,.notifications-overlay.open{display:flex}
+.settings-sheet,.notifications-sheet{width:100%;max-height:88dvh;overflow-y:auto;padding:20px 18px calc(24px + var(--safe-bot));background:var(--cbg);border-top:2px solid var(--b1);border-radius:26px 26px 0 0}
+.settings-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.settings-section{padding:14px 0;border-top:1px solid rgba(255,255,255,.12)}
+.settings-section h3{font:14px Bungee,cursive;color:var(--c1);margin-bottom:9px}
+.settings-section p{font-size:11px;line-height:1.55;color:rgba(255,255,255,.55);margin:7px 0}
+.settings-section label{display:block;margin:8px 0;font:10px Montserrat,sans-serif;color:rgba(255,255,255,.58)}
+.settings-section input,.friend-search-input{display:block;width:100%;margin-top:5px;padding:11px;border:1px solid var(--b1);border-radius:10px;background:rgba(255,255,255,.06);color:var(--t1);font:13px Montserrat,sans-serif;outline:none}
+.settings-status{min-height:16px;margin-top:6px;color:var(--c4);font:11px Montserrat,sans-serif}
+.settings-theme-bar{position:relative;top:auto;right:auto;display:flex;gap:12px;flex-wrap:wrap;padding:10px 4px}
+.settings-theme-bar .tdot{width:30px;height:30px}
+.settings-small-btn{background:none;border:1px solid var(--b1);color:var(--t1);border-radius:8px;padding:7px;margin-right:7px;font:10px Montserrat,sans-serif}
+.notification-row{padding:13px 10px;border-bottom:1px solid rgba(255,255,255,.09);color:var(--t1);font:12px/1.5 Montserrat,sans-serif;cursor:pointer}
+.notification-row.unread{background:rgba(200,0,255,.12)}
+.notification-empty{padding:24px 12px;text-align:center;color:rgba(255,255,255,.45);font:12px Montserrat,sans-serif}
+.friend-search{display:flex;gap:8px;margin:0 0 14px}
+.friend-search-input{margin:0;flex:1}
+.friend-search-btn{border:1px solid var(--b1);border-radius:10px;padding:0 13px;background:var(--c2);color:#fff;font-weight:700}
+.reply-btn,.delete-post-btn{border:0;background:transparent;color:var(--c1);font:10px Montserrat,sans-serif;padding:5px 0;cursor:pointer}
+.comment-reply{margin-left:22px;border-left:2px solid var(--b2);padding-left:10px}
+</style>
 </head>
 <body class="auth-pending">
 
@@ -337,7 +369,7 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
   <!-- FEED -->
   <div class="screen active" id="screenFeed">
     <button class="plus-btn" onclick="openFriends()" title="Find friends">+</button>
-    <div class="theme-bar" id="themebar"></div>
+    <button class="notification-btn" onclick="openNotifications()" title="Notifications">🔔<span id="notificationsBadge" class="notification-badge" style="display:none">0</span></button>
     <div class="feed" id="feedEl">
       <div class="page" id="heroPage">
         <div class="title-wrap">
@@ -402,6 +434,7 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
           <div class="stat"><div class="stat-n" id="statFriends">3</div><div class="stat-l">FRIENDS</div></div>
         </div>
         <div id="planBadge" class="free-badge" onclick="openSub('unlock YAP PRO')"><span>✦</span> FREE PLAN · UPGRADE TO PRO</div>
+        <button class="settings-open-btn" onclick="openSettings()">⚙️ Settings</button>
         <button class="logout-btn" onclick="doLogout()">🚪 Sign Out</button>
       </div>
       <div style="font-family:'Bungee',cursive;font-size:16px;color:var(--c1);margin-bottom:12px;-webkit-text-stroke:1px rgba(0,0,0,0.4)">✦ MY YAPS</div>
@@ -450,15 +483,59 @@ body{background:linear-gradient(145deg,var(--bg0),var(--bg1),var(--bg2),var(--bg
 <div class="friends-overlay" id="friendsOverlay" onclick="if(event.target===this)closeFriends()">
   <div class="friends-sheet">
     <div class="fs-head">
-      <span class="fs-title">FIND FRIENDS ✦</span>
+      <span class="fs-title">FIND USERS ✦</span>
       <button class="fs-close" onclick="closeFriends()">✕</button>
     </div>
     <div class="sub-tabs-row">
-      <button class="stab on" onclick="friendsTab(0,this)">Suggested</button>
+      <button class="stab on" onclick="friendsTab(0,this)">Search Users</button>
       <button class="stab" onclick="friendsTab(1,this)">My Friends</button>
       <button class="stab" onclick="friendsTab(2,this)">Requests</button>
     </div>
     <div id="friendsList"></div>
+  </div>
+</div>
+
+<!-- Settings -->
+<div class="settings-overlay" id="settingsOverlay" onclick="if(event.target===this)closeSettings()">
+  <div class="settings-sheet">
+    <div class="settings-head"><span class="fs-title">SETTINGS</span><button class="fs-close" onclick="closeSettings()">✕</button></div>
+    <section class="settings-section">
+      <h3>Account info</h3>
+      <label>Display name<input id="settingsDisplayName" maxlength="40" autocomplete="name"/></label>
+      <label>Username<input id="settingsHandle" maxlength="24" autocomplete="username"/></label>
+      <button class="settings-action" onclick="saveProfileSettings()">Save profile changes</button>
+      <div class="settings-status" id="profileSettingsStatus"></div>
+    </section>
+    <section class="settings-section">
+      <h3>Sign-in info</h3>
+      <label>Email<input id="settingsEmail" type="email" autocomplete="email"/></label>
+      <label>New password<input id="settingsPassword" type="password" minlength="6" autocomplete="new-password" placeholder="Leave blank to keep current"/></label>
+      <label>Confirm new password<input id="settingsPasswordConfirm" type="password" minlength="6" autocomplete="new-password"/></label>
+      <button class="settings-action" onclick="saveSignInSettings()">Update sign-in info</button>
+      <div class="settings-status" id="authSettingsStatus"></div>
+    </section>
+    <section class="settings-section">
+      <h3>Theme</h3>
+      <div class="theme-bar settings-theme-bar" id="themebar"></div>
+    </section>
+    <section class="settings-section">
+      <h3>Plan</h3>
+      <p id="settingsPlanText">Free plan · 7 YAPs per day</p>
+      <button class="settings-action" onclick="closeSettings();openSub('view plans')">View plan options</button>
+    </section>
+    <section class="settings-section">
+      <h3>Beta app</h3>
+      <button class="settings-action" onclick="installBetaApp()">Install YAP on this device</button>
+      <p>For iPhone, use Safari’s Share menu and choose “Add to Home Screen.” On Android, use your browser’s Install app option.</p>
+    </section>
+  </div>
+</div>
+
+<!-- Notifications -->
+<div class="notifications-overlay" id="notificationsOverlay" onclick="if(event.target===this)closeNotifications()">
+  <div class="notifications-sheet">
+    <div class="settings-head"><span class="fs-title">NOTIFICATIONS</span><div><button class="settings-small-btn" onclick="markAllNotificationsRead()">Mark all read</button><button class="fs-close" onclick="closeNotifications()">✕</button></div></div>
+    <div id="notificationsList"><div class="notification-empty">Loading notifications…</div></div>
   </div>
 </div>
 
@@ -522,8 +599,8 @@ const SUPABASE_URL='https://cjgzlubvneorecmpdpqk.supabase.co';
 const SUPABASE_ANON_KEY='sb_publishable_uIBBP8WaAdh_GM_kBfxnng_j8sORclM';
 const sb=supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-const STATE={session:null,profile:null,posts:[],myLikes:new Set(),currentCommentPost:null,currentChatPartner:null,chatMessages:[],friendIds:new Set(),feedChannel:null,chatChannel:null,inboxChannel:null};
-const FREE_POST_LIMIT=3;
+const STATE={session:null,profile:null,posts:[],myLikes:new Set(),currentCommentPost:null,replyToComment:null,currentChatPartner:null,chatMessages:[],friendIds:new Set(),notifications:[],feedChannel:null,chatChannel:null,inboxChannel:null,notificationChannel:null,postSubmitting:false,commentSubmitting:false};
+const FREE_POST_LIMIT=7;
 
 const THEMES=[
   {dots:['#FF85C8','#C800FF','#FFD700'],vars:{'--c1':'#FF85C8','--c2':'#C800FF','--c3':'#FFD700','--c4':'#00FFD0','--bg0':'#180018','--bg1':'#2e0048','--bg2':'#3d0060','--bg3':'#120015'}},
@@ -579,11 +656,11 @@ async function doRegister(){
   err.textContent='Creating account...';
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle,terms_accepted:true,terms_version:"2026-10-05",terms_accepted_at:termsAcceptedAt,privacy_accepted:true,privacy_version:"2026-10-05",privacy_accepted_at:termsAcceptedAt}}});
   if(error){err.textContent=error.message;return;}
-  if(data.user){
+  if(data.user&&data.session){
     const {error:profErr}=await sb.from('profiles').insert({id:data.user.id,handle,display_name:name});
-    if(profErr&&profErr.code!=='23505'){err.textContent=profErr.message;return;}
+    if(profErr&&profErr.code!=='23505'){err.textContent='Account created, but your profile could not be saved. Apply the Supabase profile policy update, then sign in again.';return;}
   }
-  err.textContent=data.session?'':'Check your email to confirm your account, then sign in.';
+  err.textContent=data.session?'':'Check your email to confirm your account, then sign in. Your profile will be created after confirmation.';
 }
 async function socialAuth(provider){
   const signingUp=document.getElementById('authPane1').style.display!=='none';
@@ -598,6 +675,7 @@ async function doLogout(){
   if(STATE.feedChannel){sb.removeChannel(STATE.feedChannel);STATE.feedChannel=null;}
   if(STATE.chatChannel){sb.removeChannel(STATE.chatChannel);STATE.chatChannel=null;}
   if(STATE.inboxChannel){sb.removeChannel(STATE.inboxChannel);STATE.inboxChannel=null;}
+  if(STATE.notificationChannel){sb.removeChannel(STATE.notificationChannel);STATE.notificationChannel=null;}
   document.getElementById('loginEmail').value='';document.getElementById('loginPass').value='';
 }
 
@@ -644,12 +722,15 @@ sb.auth.onAuthStateChange((event,session)=>{
 
 async function loadProfile(){
   const uid=STATE.session.user.id;
-  let {data}=await sb.from('profiles').select('*').eq('id',uid).single();
+  let {data,error}=await sb.from('profiles').select('*').eq('id',uid).maybeSingle();
+  if(error)throw error;
   if(!data){
     const meta=STATE.session.user.user_metadata||{};
     const display_name=meta.display_name||meta.full_name||STATE.session.user.email.split('@')[0];
-    const handle=(meta.handle||display_name).toLowerCase().replace(/[^a-z0-9_]/g,'')||'yapper'+uid.slice(0,6);
+    const base=(meta.handle||display_name).toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'yapper';
+    const handle=base+'_'+uid.slice(0,5);
     const ins=await sb.from('profiles').insert({id:uid,handle,display_name}).select().single();
+    if(ins.error)throw ins.error;
     data=ins.data;
   }
   STATE.profile=data;
@@ -661,11 +742,13 @@ async function initApp(){
   await loadFriendIds();
   await loadFeed();
   await buildChatList();
+  await loadNotifications();
   updateProfile();
   buildFriendsList(0);
   goTab(0);
   subscribeFeed();
   subscribeInbox();
+  subscribeNotifications();
 }
 function updateProfile(){
   if(!STATE.profile)return;
@@ -876,6 +959,105 @@ function loadCat(cat,btn){
 }
 function pickEmoji(e){document.getElementById('feelEmojiBtn').textContent=e;closePicker()}
 
+// SETTINGS
+function openSettings(){
+  if(!STATE.profile)return;
+  document.getElementById('settingsOverlay').classList.add('open');
+  document.getElementById('settingsDisplayName').value=STATE.profile.display_name||'';
+  document.getElementById('settingsHandle').value=STATE.profile.handle||'';
+  document.getElementById('settingsEmail').value=STATE.session?.user?.email||'';
+  document.getElementById('settingsPassword').value='';
+  document.getElementById('settingsPasswordConfirm').value='';
+  document.getElementById('settingsPlanText').textContent=STATE.profile.is_pro?'YAP PRO · Active':'Free plan · '+FREE_POST_LIMIT+' YAPs per day';
+}
+function closeSettings(){document.getElementById('settingsOverlay').classList.remove('open')}
+async function saveProfileSettings(){
+  const status=document.getElementById('profileSettingsStatus');
+  const display_name=document.getElementById('settingsDisplayName').value.trim();
+  const handle=document.getElementById('settingsHandle').value.trim().replace(/^@/,'').toLowerCase();
+  if(!display_name||display_name.length>40){status.textContent='Display name must be 1–40 characters.';return}
+  if(!/^[a-z0-9_]{3,24}$/.test(handle)){status.textContent='Username must be 3–24 letters, numbers, or underscores.';return}
+  status.textContent='Saving…';
+  const {data,error}=await sb.from('profiles').update({display_name,handle}).eq('id',STATE.profile.id).select().single();
+  if(error){status.textContent=error.code==='23505'?'That username is already taken.':error.message;return}
+  STATE.profile=data;
+  STATE.posts=STATE.posts.map(p=>p.author_id===data.id?{...p,profiles:{...(p.profiles||{}),...data}}:p);
+  updateProfile();renderPosts();buildChatList();
+  status.textContent='Profile updated.';
+}
+async function saveSignInSettings(){
+  const status=document.getElementById('authSettingsStatus');
+  const email=document.getElementById('settingsEmail').value.trim();
+  const password=document.getElementById('settingsPassword').value;
+  const confirm=document.getElementById('settingsPasswordConfirm').value;
+  if(password&&password!==confirm){status.textContent='Passwords do not match.';return}
+  if(password&&password.length<6){status.textContent='Password must be at least 6 characters.';return}
+  const updates={};
+  if(email&&email!==STATE.session?.user?.email)updates.email=email;
+  if(password)updates.password=password;
+  if(!Object.keys(updates).length){status.textContent='No sign-in changes to save.';return}
+  status.textContent='Updating…';
+  const {error}=await sb.auth.updateUser(updates);
+  if(error){status.textContent=error.message;return}
+  document.getElementById('settingsPassword').value='';
+  document.getElementById('settingsPasswordConfirm').value='';
+  status.textContent=updates.email?'Check your email to confirm the email address change.':'Password updated.';
+}
+
+// NOTIFICATIONS
+async function loadNotifications(){
+  if(!STATE.profile)return;
+  const {data,error}=await sb.from('notifications').select('id,actor_id,kind,body,post_id,comment_id,friend_request_id,created_at,read_at').eq('recipient_id',STATE.profile.id).order('created_at',{ascending:false}).limit(40);
+  if(error){console.warn('Notifications unavailable; apply the latest Supabase migration.',error);return}
+  STATE.notifications=data||[];
+  const unread=STATE.notifications.filter(n=>!n.read_at).length;
+  const badge=document.getElementById('notificationsBadge');
+  badge.textContent=unread>99?'99+':String(unread);
+  badge.style.display=unread?'block':'none';
+  const list=document.getElementById('notificationsList');
+  if(!list)return;
+  list.innerHTML=STATE.notifications.length?STATE.notifications.map(n=>'<div class="notification-row '+(!n.read_at?'unread':'')+'" onclick="openNotification(\''+n.id+'\')">'+esc(n.body)+'<div style="font-size:9px;opacity:.55;margin-top:4px">'+timeAgo(n.created_at)+'</div></div>').join(''):'<div class="notification-empty">You’re all caught up.</div>';
+}
+function openNotifications(){document.getElementById('notificationsOverlay').classList.add('open');loadNotifications()}
+function closeNotifications(){document.getElementById('notificationsOverlay').classList.remove('open')}
+async function openNotification(id){
+  const n=STATE.notifications.find(x=>x.id===id);if(!n)return;
+  if(!n.read_at){
+    const read_at=new Date().toISOString();
+    await sb.from('notifications').update({read_at}).eq('id',id).eq('recipient_id',STATE.profile.id);
+    n.read_at=read_at;
+  }
+  closeNotifications();loadNotifications();
+  if(n.friend_request_id){openFriends();const tab=document.querySelectorAll('.stab')[2];if(tab)friendsTab(2,tab);return}
+  if(n.post_id){goTab(0);setTimeout(()=>document.querySelector('[data-post-id="'+n.post_id+'"]')?.scrollIntoView({behavior:'smooth'}),100)}
+}
+async function markAllNotificationsRead(){
+  if(!STATE.profile)return;
+  const read_at=new Date().toISOString();
+  const {error}=await sb.from('notifications').update({read_at}).eq('recipient_id',STATE.profile.id).is('read_at',null);
+  if(error){showDMToast('⚠️ '+error.message);return}
+  STATE.notifications=STATE.notifications.map(n=>({...n,read_at:n.read_at||read_at}));
+  loadNotifications();
+}
+function subscribeNotifications(){
+  if(STATE.notificationChannel)sb.removeChannel(STATE.notificationChannel);
+  const id=STATE.profile.id;
+  STATE.notificationChannel=sb.channel('notifications:'+id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'recipient_id=eq.'+id},()=>loadNotifications()).subscribe();
+}
+let deferredInstallPrompt=null;
+window.addEventListener('beforeinstallprompt',event=>{event.preventDefault();deferredInstallPrompt=event});
+async function installBetaApp(){
+  if(deferredInstallPrompt){
+    deferredInstallPrompt.prompt();
+    await deferredInstallPrompt.userChoice;
+    deferredInstallPrompt=null;
+  }else if(/iphone|ipad|ipod/i.test(navigator.userAgent)){
+    alert('To install YAP: tap Share in Safari, then choose Add to Home Screen.');
+  }else{
+    showDMToast('Open your browser menu and choose Install app or Add to Home Screen.');
+  }
+}
+
 // FRIENDS
 async function loadFriendIds(){
   if(!STATE.profile)return;
@@ -889,31 +1071,37 @@ function friendsTab(i,el){document.querySelectorAll('.stab').forEach(b=>b.classL
 async function buildFriendsList(tab){
   const el=document.getElementById('friendsList');
   if(!STATE.profile)return;
-  el.innerHTML='<div style="text-align:center;padding:16px;font-size:12px;color:rgba(255,255,255,0.3)">Loading...</div>';
   if(tab===0){
-    const excludeIds=[STATE.profile.id,...STATE.friendIds];
-    let q=sb.from('profiles').select('id,handle,display_name,avatar_url').limit(30);
-    excludeIds.forEach(id=>{q=q.neq('id',id)});
-    const [{data:profiles},{data:requests}] = await Promise.all([
-      q,sb.from('friend_requests').select('requester_id,recipient_id,status').eq('status','pending').or(`requester_id.eq.${STATE.profile.id},recipient_id.eq.${STATE.profile.id}`)
-    ]);
-    const pending=new Set((requests||[]).map(r=>r.requester_id===STATE.profile.id?r.recipient_id:r.requester_id));
-    const list=profiles||[];
-    el.innerHTML=list.length?list.map(f=>`<div class="friend-row"><div class="fr-av">${avatarHTML(f)}</div><div><div class="fr-name">${esc(f.display_name)}</div><div class="fr-sub">@${esc(f.handle)}</div></div><button class="add-btn" ${pending.has(f.id)?'disabled':''} onclick="sendFriendRequest('${f.id}',this)">${pending.has(f.id)?'Request sent':'＋ Add'}</button></div>`).join(''):'<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-size:13px">No new people to suggest right now. ✦</div>';
+    el.innerHTML='<form class="friend-search" onsubmit="searchFriendUsers(event)"><input class="friend-search-input" id="friendSearchHandle" placeholder="Search exact username" autocomplete="off"/><button class="friend-search-btn">Search</button></form><div id="friendSearchResults" class="notification-empty">Search a username to find someone. YAP will not recommend or automatically contact users.</div>';
   }else if(tab===1){
-    if(!STATE.friendIds.size){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-size:13px">No friends yet. Send a request and they can accept it here. ✦</div>';return;}
-    const {data}=await sb.from('profiles').select('id,handle,display_name,avatar_url').in('id',[...STATE.friendIds]);
-    el.innerHTML=(data||[]).map(f=>`<div class="friend-row"><div class="fr-av">${avatarHTML(f)}</div><div><div class="fr-name">${esc(f.display_name)}</div><div class="fr-sub">@${esc(f.handle)}</div></div><button class="add-btn" onclick="openChatWith('${f.id}','${esc(f.display_name.replace(/'/g,"\\'"))}');closeFriends()">💬 DM</button></div>`).join('');
+    if(!STATE.friendIds.size){el.innerHTML='<div class="notification-empty">No accepted friends yet. Search a username and send a request.</div>';return;}
+    const {data,error}=await sb.from('profiles').select('id,handle,display_name,avatar_url').in('id',[...STATE.friendIds]);
+    if(error){el.innerHTML='<div class="notification-empty">Could not load friends.</div>';return}
+    el.innerHTML=(data||[]).map(f=>'<div class="friend-row"><div class="fr-av">'+avatarHTML(f)+'</div><div><div class="fr-name">'+esc(f.display_name)+'</div><div class="fr-sub">@'+esc(f.handle)+'</div></div><button class="add-btn" onclick="openChatWith(\''+f.id+'\',\''+esc(f.display_name.replace(/'/g,"\\'"))+'\');closeFriends()">💬 DM</button></div>').join('');
   }else{
-    const {data,error}=await sb.from('friend_requests').select('id,requester_id,recipient_id,status,created_at').eq('status','pending').or(`requester_id.eq.${STATE.profile.id},recipient_id.eq.${STATE.profile.id}`).order('created_at',{ascending:false});
-    if(error){el.innerHTML='<div style="padding:20px;text-align:center">Could not load requests. Please try again.</div>';return}
+    const {data,error}=await sb.from('friend_requests').select('id,requester_id,recipient_id,status,created_at').eq('status','pending').or('requester_id.eq.'+STATE.profile.id+',recipient_id.eq.'+STATE.profile.id).order('created_at',{ascending:false});
+    if(error){el.innerHTML='<div class="notification-empty">Could not load requests. Apply the latest Supabase migration.</div>';return}
     const rows=data||[];
-    if(!rows.length){el.innerHTML='<div style="text-align:center;color:rgba(255,255,255,0.3);padding:24px;font-size:13px">No pending friend requests. ✦</div>';return}
+    if(!rows.length){el.innerHTML='<div class="notification-empty">No pending friend requests.</div>';return}
     const ids=[...new Set(rows.map(r=>r.requester_id===STATE.profile.id?r.recipient_id:r.requester_id))];
     const {data:people}=await sb.from('profiles').select('id,handle,display_name,avatar_url').in('id',ids);
     const byId=new Map((people||[]).map(p=>[p.id,p]));
-    el.innerHTML=rows.map(r=>{const incoming=r.recipient_id===STATE.profile.id,p=byId.get(incoming?r.requester_id:r.recipient_id);if(!p)return '';return `<div class="friend-row"><div class="fr-av">${avatarHTML(p)}</div><div><div class="fr-name">${esc(p.display_name)}</div><div class="fr-sub">${incoming?'Wants to be friends':'Request sent'} · @${esc(p.handle)}</div></div>${incoming?`<button class="add-btn" onclick="answerFriendRequest('${r.id}',true)">Accept</button><button class="add-btn" onclick="answerFriendRequest('${r.id}',false)">Decline</button>`:'<button class="add-btn" disabled>Pending</button>'}</div>`}).join('');
+    el.innerHTML=rows.map(r=>{const incoming=r.recipient_id===STATE.profile.id,p=byId.get(incoming?r.requester_id:r.recipient_id);if(!p)return '';return '<div class="friend-row"><div class="fr-av">'+avatarHTML(p)+'</div><div><div class="fr-name">'+esc(p.display_name)+'</div><div class="fr-sub">'+(incoming?'Wants to be friends':'Request sent')+' · @'+esc(p.handle)+'</div></div>'+(incoming?'<button class="add-btn" onclick="answerFriendRequest(\''+r.id+'\',true)">Accept</button><button class="add-btn" onclick="answerFriendRequest(\''+r.id+'\',false)">Decline</button>':'<button class="add-btn" disabled>Pending</button>')+'</div>'}).join('');
   }
+}
+async function searchFriendUsers(event){
+  event.preventDefault();
+  const handle=(document.getElementById('friendSearchHandle').value||'').trim().replace(/^@/,'').toLowerCase();
+  const out=document.getElementById('friendSearchResults');
+  if(!handle||!/^[a-z0-9_]{1,24}$/.test(handle)){out.textContent='Enter a valid username.';return}
+  out.textContent='Searching…';
+  const {data:user,error}=await sb.from('profiles').select('id,handle,display_name,avatar_url').eq('handle',handle).maybeSingle();
+  if(error||!user){out.textContent='No user found with that exact username.';return}
+  if(user.id===STATE.profile.id){out.textContent='That is your username.';return}
+  if(STATE.friendIds.has(user.id)){out.innerHTML='<div class="friend-row"><div class="fr-av">'+avatarHTML(user)+'</div><div><div class="fr-name">'+esc(user.display_name)+'</div><div class="fr-sub">@'+esc(user.handle)+' · Already friends</div></div></div>';return}
+  const {data:requests}=await sb.from('friend_requests').select('requester_id,recipient_id,status').eq('status','pending').or('requester_id.eq.'+STATE.profile.id+',recipient_id.eq.'+STATE.profile.id);
+  const pending=(requests||[]).some(r=>r.requester_id===user.id||r.recipient_id===user.id);
+  out.innerHTML='<div class="friend-row"><div class="fr-av">'+avatarHTML(user)+'</div><div><div class="fr-name">'+esc(user.display_name)+'</div><div class="fr-sub">@'+esc(user.handle)+'</div></div>'+ (pending?'<button class="add-btn" disabled>Request pending</button>':'<button class="add-btn" onclick="sendFriendRequest(\''+user.id+'\',this)">＋ Add</button>')+'</div>';
 }
 async function sendFriendRequest(id,btn){
   if(!STATE.profile||id===STATE.profile.id)return;
