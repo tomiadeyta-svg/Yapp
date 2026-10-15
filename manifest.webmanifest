@@ -1,0 +1,20 @@
+{
+  "name": "YAP — Speak Your Mind",
+  "short_name": "YAP",
+  "description": "A place to speak your mind with friends.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#180018",
+  "theme_color": "#180018",
+  "icons": [
+    {
+      "src": "/yap-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
