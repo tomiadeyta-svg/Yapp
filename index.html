@@ -1285,8 +1285,9 @@ async function handleAvatarUpload(e){
   showDMToast('📤 Preparing photo…');
   try{
     const file=await prepareAvatarForUpload(chosen);
-    const path=STATE.profile.id+'/avatar-'+Date.now()+'.jpg';
-    const {error:upErr}=await sb.storage.from('yap-media').upload(path,file,{cacheControl:'0',contentType:'image/jpeg',upsert:false});
+    const ext=file.type==='image/png'?'png':file.type==='image/webp'?'webp':'jpg';
+    const path=STATE.profile.id+'/avatar-'+Date.now()+'.'+ext;
+    const {error:upErr}=await sb.storage.from('yap-media').upload(path,file,{cacheControl:'0',contentType:file.type||'image/jpeg',upsert:false});
     if(upErr)throw upErr;
     const {data:pub}=sb.storage.from('yap-media').getPublicUrl(path);
     const avatar_url=pub.publicUrl+'?v='+Date.now();
