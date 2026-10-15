@@ -9,6 +9,18 @@ begin;
 alter table public.profiles enable row level security;
 grant select, insert, update on public.profiles to authenticated;
 
+-- Make username comparisons case-insensitive and keep existing duplicate handles unique.
+with ranked as (
+  select id, row_number() over (partition by lower(handle) order by id) as position
+  from public.profiles where handle is not null
+)
+update public.profiles p
+set handle=left(regexp_replace(p.handle,'[^a-zA-Z0-9_]','','g'),15)||'_'||substr(replace(p.id::text,'-',''),1,8)
+from ranked r where r.id=p.id and r.position>1;
+
+create unique index if not exists profiles_handle_lower_unique
+  on public.profiles (lower(handle));
+
 do $$
 declare p record;
 begin
