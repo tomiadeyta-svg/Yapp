@@ -723,7 +723,7 @@ async function loadProfile(){
   if(!data){
     const meta=STATE.session.user.user_metadata||{};
     const display_name=meta.display_name||meta.full_name||STATE.session.user.email.split('@')[0];
-    const base=(meta.handle||display_name).toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,20)||'yapper';
+    const base=(meta.handle||display_name).toLowerCase().replace(/[^a-z0-9_]/g,'').slice(0,18)||'yapper';
     const handle=base+'_'+uid.slice(0,5);
     const ins=await sb.from('profiles').insert({id:uid,handle,display_name}).select().single();
     if(ins.error)throw ins.error;
@@ -1032,10 +1032,10 @@ async function saveSignInSettings(){
 // NOTIFICATIONS
 async function loadNotifications(){
   if(!STATE.profile)return;
-  const {data,error}=await sb.from('notifications').select('id,actor_id,kind,body,post_id,comment_id,friend_request_id,created_at,read_at').eq('recipient_id',STATE.profile.id).order('created_at',{ascending:false}).limit(40);
+  const [{data,error},{count:unreadCount}]=await Promise.all([sb.from('notifications').select('id,actor_id,kind,body,post_id,comment_id,friend_request_id,created_at,read_at').eq('recipient_id',STATE.profile.id).order('created_at',{ascending:false}).limit(40),sb.from('notifications').select('id',{count:'exact',head:true}).eq('recipient_id',STATE.profile.id).is('read_at',null)]);
   if(error){console.warn('Notifications unavailable; apply the latest Supabase migration.',error);return}
   STATE.notifications=data||[];
-  const unread=STATE.notifications.filter(n=>!n.read_at).length;
+  const unread=unreadCount??STATE.notifications.filter(n=>!n.read_at).length;
   const badge=document.getElementById('notificationsBadge');
   badge.textContent=unread>99?'99+':String(unread);
   badge.style.display=unread?'block':'none';
