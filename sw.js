@@ -1,5 +1,5 @@
 const CACHE_NAME='yap-shell-v1';
-const APP_FILES=['/','/index.html','/manifest.webmanifest','/yap-icon.svg'];
+const APP_FILES=['/','/index.html','/manifest.webmanifest','/yap-icon.svg','/yap-icon-192.png','/yap-icon-512.png','/apple-touch-icon.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE_NAME).then(cache=>cache.addAll(APP_FILES)).catch(()=>{}));
   self.skipWaiting();
