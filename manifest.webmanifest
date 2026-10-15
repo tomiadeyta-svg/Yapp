@@ -11,9 +11,15 @@
   "theme_color": "#180018",
   "icons": [
     {
-      "src": "/yap-icon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/yap-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/yap-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]
