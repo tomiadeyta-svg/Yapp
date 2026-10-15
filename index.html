@@ -656,11 +656,7 @@ async function doRegister(){
   err.textContent='Creating account...';
   const {data,error}=await sb.auth.signUp({email,password:pass,options:{data:{display_name:name,handle,terms_accepted:true,terms_version:"2026-10-05",terms_accepted_at:termsAcceptedAt,privacy_accepted:true,privacy_version:"2026-10-05",privacy_accepted_at:termsAcceptedAt}}});
   if(error){err.textContent=error.message;return;}
-  if(data.user&&data.session){
-    const {error:profErr}=await sb.from('profiles').insert({id:data.user.id,handle,display_name:name});
-    if(profErr&&profErr.code!=='23505'){err.textContent='Account created, but your profile could not be saved. Apply the Supabase profile policy update, then sign in again.';return;}
-  }
-  err.textContent=data.session?'':'Check your email to confirm your account, then sign in. Your profile will be created after confirmation.';
+  err.textContent=data.session?'Account created. Loading your profile…':'Check your email to confirm your account, then sign in. Your profile will be created after confirmation.';
 }
 async function socialAuth(provider){
   const signingUp=document.getElementById('authPane1').style.display!=='none';
@@ -1057,7 +1053,8 @@ async function openNotification(id){
     n.read_at=read_at;
   }
   closeNotifications();loadNotifications();
-  if(n.friend_request_id){openFriends();const tab=document.querySelectorAll('.stab')[2];if(tab)friendsTab(2,tab);return}
+  if(n.kind==='friend_request'){openFriends();const tab=document.querySelectorAll('.stab')[2];if(tab)friendsTab(2,tab);return}
+  if(n.kind==='friend_accepted'){openFriends();const tab=document.querySelectorAll('.stab')[1];if(tab)friendsTab(1,tab);return}
   if(n.post_id){goTab(0);setTimeout(()=>document.querySelector('[data-post-id="'+n.post_id+'"]')?.scrollIntoView({behavior:'smooth'}),100)}
 }
 async function markAllNotificationsRead(){
