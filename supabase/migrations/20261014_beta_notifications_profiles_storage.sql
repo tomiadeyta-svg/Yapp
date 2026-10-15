@@ -66,6 +66,45 @@ alter table public.comments
   add column if not exists parent_comment_id uuid references public.comments(id) on delete cascade;
 create index if not exists comments_parent_comment_id_idx
   on public.comments(parent_comment_id) where parent_comment_id is not null;
+create unique index if not exists comments_id_post_id_unique
+  on public.comments(id, post_id);
+do $
+begin
+  if not exists (select 1 from pg_constraint where conname='comments_parent_same_post_fk' and conrelid='public.comments'::regclass) then
+    alter table public.comments add constraint comments_parent_same_post_fk
+      foreign key (parent_comment_id, post_id) references public.comments(id, post_id) on delete cascade;
+  end if;
+end $;
+
+-- Comments follow the same audience as their YAP.
+alter table public.comments enable row level security;
+do $
+declare p record;
+begin
+  for p in select policyname from pg_policies where schemaname='public' and tablename='comments'
+  loop
+    execute format('drop policy if exists %I on public.comments',p.policyname);
+  end loop;
+end $;
+create policy "comments_read_visible_posts"
+  on public.comments for select to authenticated
+  using (exists (
+    select 1 from public.posts p
+    where p.id=comments.post_id
+      and (p.author_id=(select auth.uid()) or public.are_yap_friends((select auth.uid()),p.author_id))
+  ));
+create policy "comments_insert_visible_posts"
+  on public.comments for insert to authenticated
+  with check (author_id=(select auth.uid()) and exists (
+    select 1 from public.posts p
+    where p.id=comments.post_id
+      and (p.author_id=(select auth.uid()) or public.are_yap_friends((select auth.uid()),p.author_id))
+  ));
+create policy "comments_update_own"
+  on public.comments for update to authenticated
+  using (author_id=(select auth.uid())) with check (author_id=(select auth.uid()));
+create policy "comments_delete_own"
+  on public.comments for delete to authenticated using (author_id=(select auth.uid()));
 
 create schema if not exists private;
 revoke all on schema private from public, anon, authenticated;
