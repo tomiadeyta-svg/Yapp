@@ -56,6 +56,10 @@ create index if not exists notifications_recipient_created_idx
   on public.notifications(recipient_id, created_at desc);
 create index if not exists notifications_unread_idx
   on public.notifications(recipient_id) where read_at is null;
+create index if not exists notifications_actor_id_idx on public.notifications(actor_id);
+create index if not exists notifications_post_id_idx on public.notifications(post_id);
+create index if not exists notifications_comment_id_idx on public.notifications(comment_id);
+create index if not exists notifications_friend_request_id_idx on public.notifications(friend_request_id);
 
 alter table public.notifications enable row level security;
 grant select on public.notifications to authenticated;
@@ -78,6 +82,8 @@ alter table public.comments
   add column if not exists parent_comment_id uuid references public.comments(id) on delete cascade;
 create index if not exists comments_parent_comment_id_idx
   on public.comments(parent_comment_id) where parent_comment_id is not null;
+create index if not exists comments_post_created_idx on public.comments(post_id, created_at);
+create index if not exists comments_author_id_idx on public.comments(author_id);
 create unique index if not exists comments_id_post_id_unique
   on public.comments(id, post_id);
 do $
